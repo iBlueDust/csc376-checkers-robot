@@ -66,6 +66,18 @@ def find_best_move(board: Board, depth: int, color: int) -> Move:
     return best_move
 
 
+def see_move_robot():
+    pass
+
+
+def move_robot(move: Move):
+    pass
+
+
+def remove_piece_robot(move: Move):
+    pass
+
+
 # Play loop
 board = Board(variant="american", fen="startpos")
 human_color = WHITE
@@ -78,9 +90,13 @@ while not board.is_over():
         moves = board.legal_moves()
         print("Your legal moves:", [m.pdn_move for m in moves])
         mv_str = input("Enter your move: ").strip()
+        # change above to
+        # move = see_move_robot()
         try:
             mv = Move(board, pdn_move=mv_str)
             board.push(mv)
+            # change above to
+            # board.push(move)
         except Exception as e:
             print("Invalid move:", e)
             continue
@@ -92,6 +108,12 @@ while not board.is_over():
             break
         print(f"AI plays: {best.pdn_move}")
         board.push(best)
+
+        move_robot(best)
+
+        if best.has_captures:
+            print("captured")
+            remove_piece_robot(best)
 
 winner = board.winner()
 if winner == 0:
