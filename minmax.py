@@ -1,5 +1,8 @@
 from draughts import Board, Move, WHITE, BLACK
+# from webcam import move_piece
 
+human_color = WHITE
+ai_color = BLACK
 
 # Count white/black pieces & kings
 def evaluate(board: Board) -> int:
@@ -66,59 +69,84 @@ def find_best_move(board: Board, depth: int, color: int) -> Move:
     return best_move
 
 
+def num_to_coord(n: int) -> tuple[int, int]:
+    """
+    Convert a square number (1‑32) into 0‑based coordinates (x, y)
+    so that 0,0 corresponds to the top‑left dark square.
+    """
+    row = (n - 1) // 4
+    col_in_row = (n - 1) % 4
+    # on even rows dark squares start at column 1, on odd rows at 0
+    col = col_in_row * 2 + ((row + 1) % 2)
+    return col, row
+
+
 def see_move_robot():
-    pass
+    """
+    Build and return a FEN string representing the current board.
+    """
+    # Implement actual detection code
+    return "W:W19,23,25,K30:B12,15,K22"
 
 
 def move_robot(move: Move):
-    pass
+    steps = move.steps_move
+    if not steps or len(steps) < 2:
+        return
+
+    # handle multi‑jump captures
+    for i in range(len(steps) - 1):
+        src_sq = steps[i]
+        dst_sq = steps[i + 1]
+        src = num_to_coord(src_sq)
+        dst = num_to_coord(dst_sq)
+        print(f"Robot moving piece from {src} -> {dst}")
+        # move_piece(src, dst)
 
 
 def remove_piece_robot(move: Move):
+    # Move somewhere outside of board
+    # move_piece(15, 15)
     pass
 
 
-# Play loop
-board = Board(variant="american", fen="startpos")
-human_color = WHITE
-ai_color = BLACK
+def play_move():
+    custom_fen = see_move_robot()
+    board = Board(variant="american", fen=custom_fen)
 
-while not board.is_over():
     print(board)
 
-    if board.turn == human_color:
-        moves = board.legal_moves()
-        print("Your legal moves:", [m.pdn_move for m in moves])
-        mv_str = input("Enter your move: ").strip()
-        # change above to
-        # move = see_move_robot()
-        try:
-            mv = Move(board, pdn_move=mv_str)
-            board.push(mv)
-            # change above to
-            # board.push(move)
-        except Exception as e:
-            print("Invalid move:", e)
-            continue
-    else:
-        print("AI thinking...")
-        best = find_best_move(board, depth=3, color=ai_color)
-        if not best:
-            print("No legal move.")
+    print("AI thinking...")
+    best = find_best_move(board, depth=3, color=ai_color)
+    if not best:
+        print("No legal move.")
+        return board.winner()
+    print(f"AI plays: {best.pdn_move}")
+    board.push(best)
+
+    move_robot(best)
+
+    if best.has_captures:
+        print("captured")
+        remove_piece_robot(best)
+
+    return board.winner() if board.is_over() else None
+
+
+if __name__ == "__main__":
+    # Play loop
+    winner = -1
+    while True:
+        outcome = play_move()
+        if outcome is not None:
+            winner = outcome
             break
-        print(f"AI plays: {best.pdn_move}")
-        board.push(best)
 
-        move_robot(best)
+        # Wait for player move
 
-        if best.has_captures:
-            print("captured")
-            remove_piece_robot(best)
-
-winner = board.winner()
-if winner == 0:
-    print("Draw!")
-elif winner == human_color:
-    print("You win!")
-else:
-    print("AI wins!")
+    if winner == 0:
+        print("Draw!")
+    elif winner == human_color:
+        print("You win!")
+    else:
+        print("AI wins!")
