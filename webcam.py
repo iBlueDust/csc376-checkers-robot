@@ -8,7 +8,7 @@ from spatialmath import SE3
 import csc376_bind_franky
 
 import minmax
-from draughts import Board, Move, BLACK
+from draughts import Board, Move, BLACK, WHITE
 
 
 def main():
@@ -32,6 +32,11 @@ def main():
 
 
     def move(target: SE3):
+        """
+        Move the robot to a target position using joint trajectory.
+        Args:
+            target: The target position to move to. SE3 object.
+        """
         q_start = csc376_franky_robot.get_current_joint_positions()
 
         # III. Calculate your goal
@@ -67,6 +72,11 @@ def main():
             print(e)
 
     def move_q(q_end: list[float]):
+        """
+        Move the robot to a target position using joint trajectory.
+        Args:
+            q_end: The target position to move to. List of joint positions.
+        """
         q_start = csc376_franky_robot.get_current_joint_positions()
         q_start = np.array(q_start)
         q_end = np.array(q_end)
@@ -90,26 +100,30 @@ def main():
             print(e)
 
     def grip(q: float):
+        """Move the gripper width to q.
+        """
         # visualizer.move_gripper(q, 0.1)
         print('Enter gripper')
         csc376_gripper.move(q, 0.1)
         print('Exit gripper')
 
 
-    CAMERA_ORIGIN = SE3.Trans(0.4025, -0.066, 0)
-    BOARD_ORIGIN = SE3.Trans(0.480, 0, 0)
+    CAMERA_ORIGIN = SE3.Trans(0.4025, -0.066, 0) # position where camera can see the whole board
+    BOARD_ORIGIN = SE3.Trans(0.480, 0, 0) # origin of the board in the world frame
     BOARD_SIZE = 0.32
     LOW_FLOOR = -0.000
     MID_FLOOR = 0.05
     HIGH_FLOOR = 0.4
 
     def move_piece(src: tuple[int, int], dest: tuple[int, int]):
+        """ Move a piece from src coords to dest coords.
+        """
         BOARD_CORNER = BOARD_ORIGIN * SE3.Trans(-BOARD_SIZE / 2, -BOARD_SIZE / 2, 0)
         src_pos = BOARD_CORNER * SE3(BOARD_SIZE * src[0] / 8.0, BOARD_SIZE * src[1] / 8.0, 0)
         dest_pos = BOARD_CORNER * SE3(BOARD_SIZE * dest[0] / 8.0, BOARD_SIZE * dest[1] / 8.0, 0)
 
         grip(0.05)
-        move(src_pos * SE3.Tz(MID_FLOOR) * SE3.Rx(np.pi))
+        move(src_pos * SE3.Tz(MID_FLOOR) * SE3.Rx(np.pi)) # Rx is rotate around x axis so that the end effector is facing the board
         move(src_pos * SE3.Tz(LOW_FLOOR) * SE3.Rx(np.pi))
         grip(0.0305)
         move(src_pos * SE3.Tz(MID_FLOOR) * SE3.Rx(np.pi))
@@ -133,7 +147,8 @@ def main():
 
     def move_home():
         grip(0.05)
-        move_q([-0.010096422112703594, -0.4704397389824306, -0.1172932928857341, -2.1056523873364483, -0.05548446332414944, 1.6359151515430872, 0.6788236314586359])
+        move_q([-0.010096, -0.4704397, -0.117293, -2.105652, 
+                -0.055484, 1.635915, 0.678823]) # This is the home position for the robot
         move(CAMERA_ORIGIN * SE3.Tz(HIGH_FLOOR) * SE3.Rx(np.pi))
 
     def num_to_coord(n: int) -> tuple[int, int]:
@@ -141,12 +156,13 @@ def main():
         col_in_row = (n - 1) % 4
         # on even rows dark squares start at column 1, on odd rows at 0
         col = col_in_row * 2 + ((row + 1) % 2)
-        return col, row
+        return (col, row)
 
 
     def move_robot(move: Move):
         steps = move.steps_move
         if not steps or len(steps) < 2:
+            print("No steps or less than 2 steps")
             return
 
         # handle multi‑jump captures
