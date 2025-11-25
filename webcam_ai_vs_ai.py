@@ -96,12 +96,12 @@ def main():
         print('Exit gripper')
 
 
-    CAMERA_ORIGIN = SE3.Trans(0.4025, -0.066, 0)
-    BOARD_ORIGIN = SE3.Trans(0.480, 0, 0)
+    CAMERA_ORIGIN = SE3.Trans(0.4275, -0.066, 0)
+    BOARD_ORIGIN = SE3.Trans(0.505, 0, 0)
     BOARD_SIZE = 0.32
-    LOW_FLOOR = -0.000
-    MID_FLOOR = 0.05
-    HIGH_FLOOR = 0.4
+    LOW_FLOOR = 0 + 0.022
+    MID_FLOOR = 0.05 + 0.022
+    HIGH_FLOOR = 0.5 + 0.022
 
     def move_piece(src: tuple[int, int], dest: tuple[int, int]):
         BOARD_CORNER = BOARD_ORIGIN * SE3.Trans(-BOARD_SIZE / 2, -BOARD_SIZE / 2, 0)
@@ -117,6 +117,20 @@ def main():
         move(dest_pos * SE3.Tz(LOW_FLOOR) * SE3.Rx(np.pi))
         grip(0.05)
         move(dest_pos * SE3.Tz(MID_FLOOR) * SE3.Rx(np.pi))
+        
+    def discard_piece(src: tuple[int, int]):
+        dest = (1, -3)
+        BOARD_CORNER = BOARD_ORIGIN * SE3.Trans(-BOARD_SIZE / 2, -BOARD_SIZE / 2, 0)
+        src_pos = BOARD_CORNER * SE3(BOARD_SIZE * src[0] / 8.0, BOARD_SIZE * src[1] / 8.0, 0)
+        dest_pos = BOARD_CORNER * SE3(BOARD_SIZE * dest[0] / 8.0, BOARD_SIZE * dest[1] / 8.0, 0)
+
+        grip(0.05)
+        move(src_pos * SE3.Tz(MID_FLOOR) * SE3.Rx(np.pi))
+        move(src_pos * SE3.Tz(LOW_FLOOR) * SE3.Rx(np.pi))
+        grip(0.0305)
+        move(src_pos * SE3.Tz(MID_FLOOR) * SE3.Rx(np.pi))
+        move(dest_pos * SE3.Tz(MID_FLOOR) * SE3.Rx(np.pi))
+        grip(0.05)
 
     def move_to_all_corners():
         BOARD_CORNER = BOARD_ORIGIN * SE3.Trans(-BOARD_SIZE / 2, -BOARD_SIZE / 2, 0)
@@ -141,7 +155,7 @@ def main():
         col_in_row = (n - 1) % 4
         # on even rows dark squares start at column 1, on odd rows at 0
         col = col_in_row * 2 + ((row + 1) % 2)
-        return col, row
+        return row, col
 
 
     def move_robot(move: Move):
@@ -160,9 +174,9 @@ def main():
 
     move_home()
     # move_to_all_corners()
-    move_piece((7, 0), (4, 7))
-    move_piece((2, 5), (3, 6))
-    move_home()
+    # move_piece((7, 0), (4, 7))
+    # move_piece((2, 5), (3, 6))
+    # move_home()
 
     # Play loop
     board = Board(variant="american", fen="startpos")
@@ -185,7 +199,7 @@ def main():
                 print("captured")
                 for cap in best.captures:
                     src = num_to_coord(cap)
-                    move_piece(src, (10, 10))
+                    discard_piece(src)
         else:
             print("AI2 thinking...")
             best = minmax.find_best_move(board, depth=3, color=ai2_color)
@@ -201,7 +215,7 @@ def main():
                 print("captured")
                 for cap in best.captures:
                     src = num_to_coord(cap)
-                    move_piece(src, (10, 10))
+                    discard_piece(src)
 
     winner = board.winner()
     if winner == 0:
