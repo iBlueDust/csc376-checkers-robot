@@ -114,7 +114,7 @@ def run_human_vs_ai(robot: Robot, cam: Vision, human_color=WHITE):
             # AI's turn
             print(f"\nAI thinking...")
             t_start = time.time() * 1000.0
-            best = minmax.find_best_move(board, depth=4, color=ai_color)
+            best = minmax.find_best_move(board, depth=5, color=ai_color)
             current_vision = cam.get_game_board()
             t_end = time.time() * 1000.0
             t_elapsed = t_end - t_start
