@@ -22,7 +22,7 @@ def main():
             print(f"AI plays: {best.pdn_move}")
             board.push(best)
 
-            robot.move_robot(best)
+            robot.exec_player_move(best)
 
             if best.has_captures:
                 print("captured")
