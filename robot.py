@@ -19,8 +19,8 @@ class Robot:
         robot.grip_open()
     '''
     # I. Speed factor settings
-    relative_vel_factor = 0.04
-    relative_acc_factor = 0.04
+    relative_vel_factor = 0.035
+    relative_acc_factor = 0.035
     relative_jerk_factor = 0.12
     
     camera_origin = SE3.Trans(0.4275, -0.066, 0) # only pertains information of the xy-coordinate of the camera
