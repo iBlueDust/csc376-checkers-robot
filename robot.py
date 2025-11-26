@@ -4,8 +4,7 @@ from csc376_franky.vizualizer import RtbVisualizer
 from csc376_franky.motion_generator import RuckigMotionGenerator
 from spatialmath import SE3
 import csc376_bind_franky
-
- 
+from draughts import Move
  
 class Robot:
     '''
@@ -175,6 +174,27 @@ class Robot:
             # Not quite there yet, lets use IK to fix
             self.move_ik(self.camera_origin * SE3.Tz(self.high_floor) * SE3.Rx(np.pi))
  
+    def _cell_id_to_coord(n: int) -> tuple[int, int]:
+        row = (n - 1) // 4
+        col_in_row = (n - 1) % 4
+        # on even rows dark squares start at column 1, on odd rows at 0
+        col = col_in_row * 2 + ((row + 1) % 2)
+        return row, col
+    
+    def exec_player_move(self, move: Move):
+        steps = move.steps_move
+        if not steps or len(steps) < 2:
+            return
+
+        # handle multi‑jump captures
+        for i in range(len(steps) - 1):
+            src_sq = steps[i]
+            dst_sq = steps[i + 1]
+            src = self._cell_id_to_coord(src_sq)
+            dst = self._cell_id_to_coord(dst_sq)
+            print(f"Robot moving piece from {src} -> {dst}")
+            self.move_piece(src, dst)
+ 
     def __enter__(self):
         return self
     
@@ -182,6 +202,6 @@ class Robot:
         self.visualizer.stop() # Makes sure render thread ends
  
  
-if __name__ == "__main__":
-    visualizer = main()
-    visualizer.stop() # Makes sure render thread ends
+# if __name__ == "__main__":
+#     visualizer = main()
+#     visualizer.stop() # Makes sure render thread ends
