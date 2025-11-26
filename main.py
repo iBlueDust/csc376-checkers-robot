@@ -79,14 +79,14 @@ def run_human_vs_ai(robot: Robot, cam: Vision, human_color=WHITE):
                 # Get current board state from camera
                 robot.move_home()
 
-                t_start = time.time()
+                t_start = time.time() * 1000.0
                 current_vision = cam.get_game_board()
-                t_end = time.time()
+                t_end = time.time() * 1000.0
                 t_elapsed = t_end - t_start
-                print(f'Vision took {t_elapsed * 1000.0:.02f} ms', end='\r')
+                print(f'Vision took {t_elapsed:.02f} ms', end='\r')
  
                 # Check for key press
-                key = cv2.waitKey(100) & 0xFF
+                key = cv2.waitKey(round(max(5, 1000/60.0 - t_elapsed))) & 0xFF
  
                 if key == ord('q'):
                     print("Game quit by user.")
@@ -113,7 +113,13 @@ def run_human_vs_ai(robot: Robot, cam: Vision, human_color=WHITE):
         else:
             # AI's turn
             print(f"\nAI thinking...")
+            t_start = time.time() * 1000.0
             best = minmax.find_best_move(board, depth=4, color=ai_color)
+            current_vision = cam.get_game_board()
+            t_end = time.time() * 1000.0
+            t_elapsed = t_end - t_start
+            
+            print(f'AI took {t_elapsed:.02f} ms')
  
             if not best:
                 print("AI has no legal moves.")
