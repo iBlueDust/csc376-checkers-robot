@@ -60,6 +60,11 @@ class Vision:
                 bottom_right = bottom_right - CELL_SIZE // 4
     
                 detection_zone = frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], :]
+                cv2.resize(
+                    detection_zone, 
+                    (detection_zone.shape[0] // 2, detection_zone.shape[1] // 2), 
+                    dst=detection_zone
+                )
     
                 detection_zone_hsv = cv2.cvtColor(detection_zone, cv2.COLOR_BGR2HSV)
                 # green screen
