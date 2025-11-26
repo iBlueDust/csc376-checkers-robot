@@ -1,14 +1,9 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from enum import Enum
 
+from board import Board, BLACK, WHITE, EMPTY
 
-class BoardCell(str, Enum):
-    EMPTY = '.'
-    BLACK = 'b'
-    WHITE = 'w'
-    
 
 class Vision:
     rval: bool
@@ -37,7 +32,7 @@ class Vision:
         return rval, self.frame
     
     
-    def get_game_board(self) -> list[list[BoardCell]]:
+    def get_game_board(self) -> Board:
         BOARD = np.array([[142, 75], [478, 418]])
         BOARD_SIZE = BOARD[1] - BOARD[0]
         CELL_SIZE = BOARD_SIZE / 8
@@ -50,6 +45,8 @@ class Vision:
         # mask = cv2.inRange(frame_hsv, (57, 93, 68), (96, 255, 197)) # green screen
         # color_mask = cv2.inRange(frame_hsv, (0, 0, 0), (180, 120, 54)) # dark pieces
     
+        board = Board()
+        
         for c in range(8):
             for r in range(8):
                 top_left = BOARD[0] + np.multiply(np.array([c, r]), CELL_SIZE)
@@ -80,7 +77,10 @@ class Vision:
                     # frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], 0] = cell_color_mask
                     # frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], 1] = cell_color_mask
                     # frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], 2] = cell_color_mask
-    
+                
+                board[r, c] = (WHITE if is_piece_white else BLACK) \
+                              if is_piece_present else EMPTY
+
     
         # plt.subplot(121),plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         # plt.title('Original Image'), plt.xticks([]), plt.yticks([])
@@ -94,5 +94,7 @@ class Vision:
         # key = cv2.waitKey(50)
         # if key == 27: # exit on ESC
         #     break
+        
+        return board
  
  
