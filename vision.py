@@ -8,6 +8,7 @@ from draughts import Board as DraughtsBoard
 
 class Vision:
     rval: bool
+    frame: cv2.Mat | None = None
     
     def __init__(self, device_index: int = 0):
         cv2.namedWindow("preview")
@@ -29,7 +30,8 @@ class Vision:
         
  
     def get_frame(self) -> tuple[bool, cv2.Mat]:
-        rval, _ = self.vc.read(self.frame)
+        rval, self.frame = self.vc.read()
+        cv2.imshow("preview", self.frame)
         return rval, self.frame
     
     
@@ -38,7 +40,11 @@ class Vision:
         BOARD_SIZE = BOARD[1] - BOARD[0]
         CELL_SIZE = BOARD_SIZE / 8
     
-        rval, _ = self.vc.read(self.frame)
+        rval, self.frame = self.vc.read()
+        while not rval:
+            input('Camera not ready. Press Enter to retry...')
+            rval, self.frame = self.vc.read()
+            
         frame = self.frame.copy()
     
         frame = cv2.rectangle(frame, BOARD[0], BOARD[1], color=(0, 0, 255))

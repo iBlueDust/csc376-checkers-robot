@@ -59,9 +59,9 @@ def run_human_vs_ai(robot: Robot, cam: Vision, human_color=WHITE):
             print("Press 'c' to confirm your move, 'q' to quit")
  
             while True:
-                # Get current board state from camera
-                current_vision = cam.get_game_board()
- 
+                # Show camera feed
+                _ = cam.get_frame()
+                
                 # Check for key press
                 key = cv2.waitKey(100) & 0xFF
  
@@ -70,6 +70,9 @@ def run_human_vs_ai(robot: Robot, cam: Vision, human_color=WHITE):
                     return
  
                 elif key == ord('c'):
+                    # Get current board state from camera
+                    current_vision = cam.get_game_board()
+                    
                     # User confirms move
                     if boards_differ(prev_vision, current_vision):
                         if validate_move(prev_vision, current_vision):
