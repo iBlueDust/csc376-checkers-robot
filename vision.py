@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from board import Board, BLACK, WHITE, EMPTY
+from draughts import Board as DraughtsBoard
 
 
 class Vision:
@@ -44,8 +45,10 @@ class Vision:
         # frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # mask = cv2.inRange(frame_hsv, (57, 93, 68), (96, 255, 197)) # green screen
         # color_mask = cv2.inRange(frame_hsv, (0, 0, 0), (180, 120, 54)) # dark pieces
-    
-        board = Board()
+        
+        # Build piece lists for FEN
+        white_pieces = []
+        black_pieces = []
         
         for c in range(8):
             for r in range(8):
@@ -77,10 +80,14 @@ class Vision:
                     # frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], 0] = cell_color_mask
                     # frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], 1] = cell_color_mask
                     # frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], 2] = cell_color_mask
-                
-                board[r, c] = (WHITE if is_piece_white else BLACK) \
-                              if is_piece_present else EMPTY
-
+                    # Only dark squares have pieces (row + col is odd)
+                    if (r + c) % 2 == 1:
+                        # Calculate square number (1-32)
+                        sq = (r * 4) + (c // 2) + 1
+                        if is_piece_white:
+                            white_pieces.append(str(sq))
+                        else:
+                            black_pieces.append(str(sq))
     
         # plt.subplot(121),plt.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         # plt.title('Original Image'), plt.xticks([]), plt.yticks([])
@@ -95,6 +102,12 @@ class Vision:
         # if key == 27: # exit on ESC
         #     break
         
-        return board
+        # Build FEN string
+        white_str = ",".join(white_pieces) if white_pieces else ""
+        black_str = ",".join(black_pieces) if black_pieces else ""
+        fen = f"W:W{white_str}:B{black_str}"
+        
+        # Create and return DraughtsBoard from FEN
+        return DraughtsBoard(variant="american", fen=fen)
  
  

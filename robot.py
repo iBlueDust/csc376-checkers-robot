@@ -22,10 +22,10 @@ class Robot:
     relative_acc_factor = 0.02
     relative_jerk_factor = 0.04
     
-    camera_origin = SE3.Trans(0.4275, -0.066, 0) 
-    board_origin = SE3.Trans(0.505, 0, 0)
-    board_size = 0.32
-    low_floor = 0 + 0.022
+    camera_origin = SE3.Trans(0.4275, -0.066, 0) # only pertains information of the xy-coordinate of the camera
+    board_origin = SE3.Trans(0.505, 0, 0) # 0.505 in the x-direction from the robot base
+    board_size = 0.32 # size of the board in the world frame
+    low_floor = 0 + 0.022 
     mid_floor = 0.05 + 0.022
     high_floor = 0.5 + 0.022
     
@@ -80,6 +80,9 @@ class Robot:
                     self.visualizer.run_joint_trajectory(q_traj, dt)
  
     def move_q(self, q_end: list[float], duration_sec=2.0, dt_sec=0.03):
+        """robot motion with smoothstep time scaling
+        """
+
         q_start = self.real_robot.get_current_joint_positions()
         q_start = np.array(q_start)
         q_end = np.array(q_end)
@@ -108,10 +111,12 @@ class Robot:
                     self.visualizer.run_joint_trajectory(q_traj, dt_sec)
         
     def get_pose(self) -> SE3:
+        """get current robot pose in SE3. this perfroms forward kinematics"""
         q_current = self.real_robot.get_current_joint_positions()
         return self.sim_model.fkine(q_current)
  
     def grip(self, q: float):       
+        """move gripper to q position"""
         if self.visualizer is None: 
             # move robot directly
             self.real_gripper.move(q, 0.1)
@@ -124,9 +129,11 @@ class Robot:
                     self.visualizer.move_gripper(q, 0.1)
 
     def grip_open(self):
+        """open gripper to grip_open_q position"""
         self.grip(self.grip_open_q)
         
     def grip_close(self):
+        """close gripper to grip_closed_q position"""
         self.grip(self.grip_closed_q)
  
     def move_piece(self,
@@ -134,8 +141,9 @@ class Robot:
                    dest: tuple[int, int], 
                    drop_at_height=False
                    ) -> None:
+        """move piece from src to dest on the board"""
         board_corner = self.board_origin \
-            * SE3.Trans(-self.board_size / 2, -self.board_size / 2, 0)
+            * SE3.Trans(-self.board_size / 2, -self.board_size / 2, 0) # this is the 0,0 coordinate of the board in the world frame
         src_pos = board_corner \
             * SE3.Tx(self.board_size * src[0] / 8.0) \
             * SE3.Ty(self.board_size * src[1] / 8.0)
@@ -144,16 +152,16 @@ class Robot:
             * SE3.Ty(self.board_size * dest[1] / 8.0)
  
         self.grip_open()
-        self.move(src_pos * SE3.Tz(self.mid_floor) * SE3.Rx(np.pi))
-        self.move(src_pos * SE3.Tz(self.low_floor) * SE3.Rx(np.pi))
+        self.move_ik(src_pos * SE3.Tz(self.mid_floor) * SE3.Rx(np.pi))
+        self.move_ik(src_pos * SE3.Tz(self.low_floor) * SE3.Rx(np.pi))
         self.grip_close()
-        self.move(src_pos * SE3.Tz(self.mid_floor) * SE3.Rx(np.pi))
-        self.move(dest_pos * SE3.Tz(self.mid_floor) * SE3.Rx(np.pi))
+        self.move_ik(src_pos * SE3.Tz(self.mid_floor) * SE3.Rx(np.pi))
+        self.move_ik(dest_pos * SE3.Tz(self.mid_floor) * SE3.Rx(np.pi))
         if not drop_at_height: 
-            self.move(dest_pos * SE3.Tz(self.low_floor) * SE3.Rx(np.pi))
+            self.move_ik(dest_pos * SE3.Tz(self.low_floor) * SE3.Rx(np.pi))
         self.grip_open()
         if not drop_at_height: 
-            self.move(dest_pos * SE3.Tz(self.mid_floor) * SE3.Rx(np.pi))
+            self.move_ik(dest_pos * SE3.Tz(self.mid_floor) * SE3.Rx(np.pi))
  
     def discard_piece(self, src: tuple[int, int]) -> None:
         dest = (1, -3)
@@ -169,7 +177,7 @@ class Robot:
  
         self.grip(0.05)
         for corner in corners:
-            self.move(corner * SE3.Tz(self.mid_floor) * SE3.Rx(np.pi))
+            self.move_ik(corner * SE3.Tz(self.mid_floor) * SE3.Rx(np.pi))
  
     def move_home(self):
         self.grip_open()

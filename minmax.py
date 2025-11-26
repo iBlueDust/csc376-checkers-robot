@@ -7,7 +7,7 @@ ai_color = BLACK
 # Count white/black pieces & kings
 def evaluate(board: Board) -> int:
     """
-    Positive if WHITE ahead, negative if BLACK ahead.
+    Positive if WHITE ahead, negative if BLACK ahead. This is the essence of the minimax algorithm.
     """
     fen = board.fen
     white_pieces = fen.count("w")
