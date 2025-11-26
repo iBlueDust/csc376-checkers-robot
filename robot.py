@@ -5,7 +5,8 @@ from csc376_franky.motion_generator import RuckigMotionGenerator
 from spatialmath import SE3
 import csc376_bind_franky
 from draughts import Move
-import pymp
+from math import ceil
+
  
 class Robot:
     '''
@@ -18,13 +19,13 @@ class Robot:
         robot.grip_open()
     '''
     # I. Speed factor settings
-    relative_vel_factor = 0.06
-    relative_acc_factor = 0.06
+    relative_vel_factor = 0.04
+    relative_acc_factor = 0.04
     relative_jerk_factor = 0.12
     
-    camera_origin = SE3.Trans(0.4275, -0.066, 0) 
-    board_origin = SE3.Trans(0.505, 0, 0)
-    board_size = 0.32
+    camera_origin = SE3.Trans(0.4275, -0.066, 0) # only pertains information of the xy-coordinate of the camera
+    board_origin = SE3.Trans(0.505, 0, 0) # 0.505 in the x-direction from the robot base
+    board_size = 0.32 # size of the board in the world frame
     low_floor = 0 + 0.022 + 0.060
     mid_floor = 0.03 + 0.022 + 0.060
     high_floor = 0.5 + 0.022 + 0.060
@@ -33,6 +34,9 @@ class Robot:
     grip_closed_q = 0.0305
 
     def __init__(self, visualizer=True, franka_url='192.168.1.107'):   
+        if visualizer:
+            import pymp
+
         # II. RTB, Ruckig, csc376_franky, and Visualizer setup
         self.sim_model = rtb.models.Panda()
         self.motion_generator = RuckigMotionGenerator()
@@ -68,16 +72,17 @@ class Robot:
             cartesian_traj
         )
  
-        if self.visualizer is None: 
-            # move robot directly
-            self.real_robot.run_joint_trajectory(q_traj, dt)
-        else:
-            # move robot and visualizer simultaneously
-            with pymp.Parallel(2) as p:
-                if p.thread_num == 0:
-                    self.real_robot.run_joint_trajectory(q_traj, dt)
-                elif p.thread_num == 1:
-                    self.visualizer.run_joint_trajectory(q_traj, dt)
+        self.real_robot.run_joint_trajectory(q_traj, dt)
+        # if self.visualizer is None: 
+        #     # move robot directly
+        #     self.real_robot.run_joint_trajectory(q_traj, dt)
+        # else:
+        #     # move robot and visualizer simultaneously
+        #     with pymp.Parallel(2) as p:
+        #         if p.thread_num == 0:
+        #             self.real_robot.run_joint_trajectory(q_traj, dt)
+        #         elif p.thread_num == 1:
+        #             self.visualizer.run_joint_trajectory(q_traj, dt)
  
     def move_q(self, q_end: list[float], duration_sec=2.0, dt_sec=0.03):
         """robot motion with smoothstep time scaling
@@ -87,7 +92,7 @@ class Robot:
         q_start = np.array(q_start)
         q_end = np.array(q_end)
  
-        n_steps = duration_sec // dt_sec
+        n_steps = ceil(duration_sec / dt_sec)
  
         q_traj = [q_start]
  
@@ -99,16 +104,17 @@ class Robot:
  
         q_traj.append(q_end)
  
-        if self.visualizer is None: 
-            # move robot directly
-            self.real_robot.run_joint_trajectory(q_traj, dt_sec)
-        else:
-            # move robot and visualizer simultaneously
-            with pymp.Parallel(2) as p:
-                if p.thread_num == 0:
-                    self.real_robot.run_joint_trajectory(q_traj, dt_sec)
-                elif p.thread_num == 1:
-                    self.visualizer.run_joint_trajectory(q_traj, dt_sec)
+        self.real_robot.run_joint_trajectory(q_traj, dt_sec)
+        # if self.visualizer is None: 
+        #     # move robot directly
+        #     self.real_robot.run_joint_trajectory(q_traj, dt_sec)
+        # else:
+        #     # move robot and visualizer simultaneously
+        #     with pymp.Parallel(2) as p:
+        #         if p.thread_num == 0:
+        #             self.real_robot.run_joint_trajectory(q_traj, dt_sec)
+        #         elif p.thread_num == 1:
+        #             self.visualizer.run_joint_trajectory(q_traj, dt_sec)
         
     def get_pose(self) -> SE3:
         """get current robot pose in SE3. this perfroms forward kinematics"""
@@ -117,16 +123,17 @@ class Robot:
  
     def grip(self, q: float):       
         """move gripper to q position"""
-        if self.visualizer is None: 
-            # move robot directly
-            self.real_gripper.move(q, 0.1)
-        else:
-            # move robot and visualizer simultaneously
-            with pymp.Parallel(2) as p:
-                if p.thread_num == 0:
-                    self.real_gripper.move(q, 0.1)
-                elif p.thread_num == 1:
-                    self.visualizer.move_gripper(q, 0.1)
+        self.real_gripper.move(q, 0.1)
+        # if self.visualizer is None: 
+        #     # move robot directly
+        #     self.real_gripper.move(q, 0.1)
+        # else:
+        #     # move robot and visualizer simultaneously
+        #     with pymp.Parallel(2) as p:
+        #         if p.thread_num == 0:
+        #             self.real_gripper.move(q, 0.1)
+        #         elif p.thread_num == 1:
+        #             self.visualizer.move_gripper(q, 0.1)
 
     def grip_open(self):
         """open gripper to grip_open_q position"""
@@ -182,21 +189,21 @@ class Robot:
     def move_home(self):
         self.grip_open()
         # This moves to about home
-        self.move_q([-0.010096422112703594, -0.4704397389824306, -0.1172932928857341, -2.1056523873364483, -0.05548446332414944, 1.6359151515430872, 0.6788236314586359])
+        self.move_q([-0.0019072040291727667, -0.3332439469118848, -0.11625275145144795, -1.7683176150558584, -0.04128156322020071, 1.4369431870248583, 0.671426051719321])
         
         current_pose = self.get_pose()
         if not np.allclose(current_pose.t, self.camera_origin.t, atol=1e-3):
             # Not quite there yet, lets use IK to fix
             self.move_ik(self.camera_origin * SE3.Tz(self.high_floor) * SE3.Rx(np.pi))
  
-    def _cell_id_to_coord(n: int) -> tuple[int, int]:
+    def _cell_id_to_coord(self, n: int) -> tuple[int, int]:
         row = (n - 1) // 4
         col_in_row = (n - 1) % 4
         # on even rows dark squares start at column 1, on odd rows at 0
         col = col_in_row * 2 + ((row + 1) % 2)
         return row, col
     
-    def exec_player_move(self, move: Move):
+    def exec_player_move(self, move: Move, color=None):
         steps = move.steps_move
         if not steps or len(steps) < 2:
             return
@@ -213,8 +220,9 @@ class Robot:
     def __enter__(self):
         return self
     
-    def __exit__(self):
-        self.visualizer.stop() # Makes sure render thread ends
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.visualizer is not None:
+            self.visualizer.stop() # Makes sure render thread ends
  
  
 # if __name__ == "__main__":

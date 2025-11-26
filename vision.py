@@ -30,13 +30,11 @@ class VideoCapture:
                     self.q.get_nowait()   # discard previous (unprocessed) frame
                 except queue.Empty:
                     pass
-            self.q.put(frame)
+            
+            self.q.put_nowait(frame)
 
     def read(self):
-        try:
-            return self.q.get()
-        except queue.Empty:
-            return None
+        return self.q.get()
     
     def isOpened(self):
         return self.cap.isOpened()
@@ -56,7 +54,8 @@ class Vision:
         self.vc = VideoCapture(device_index)
  
         if self.vc.isOpened(): # try to get the first frame
-            self.rval, self.frame = self.vc.read()
+            self.frame = self.vc.read()
+            print('Read first cam frame')
         else:
             self.rval = False
  
@@ -76,15 +75,15 @@ class Vision:
         return self.frame
     
     
-    def get_game_board(self) -> Board:
-        BOARD = np.array([[142, 75], [478, 418]])
+    def get_game_board(self) -> DraughtsBoard:
+        BOARD = np.array([[142, 75], [478, 418]], dtype=int)
         BOARD_SIZE = BOARD[1] - BOARD[0]
-        CELL_SIZE = BOARD_SIZE / 8
+        CELL_SIZE = BOARD_SIZE // 8
     
         self.frame = self.vc.read()
-        while self.frame is None:
-            input('Camera not ready. Press Enter to retry...')
-            self.frame = self.vc.read()
+        # while self.frame is None:
+            # input('Camera not ready. Press Enter to retry...')
+            # self.frame = self.vc.read()
             
         frame = self.frame.copy()
     
@@ -105,7 +104,7 @@ class Vision:
                 # Shrink every cell to the center of each cell
                 top_left = top_left + CELL_SIZE // 4
                 bottom_right = bottom_right - CELL_SIZE // 4
-    
+
                 detection_zone = frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], :]
                 cv2.resize(
                     detection_zone, 
@@ -126,8 +125,8 @@ class Vision:
                 is_piece_white = np.mean(cell_color_mask) > 24
     
                 if is_piece_present:
-                    c = (0, 0, 255) if is_piece_white else (255, 0, 0)
-                    frame = cv2.rectangle(frame, top_left, bottom_right, color=c)
+                    color = (0, 0, 255) if is_piece_white else (255, 0, 0)
+                    frame = cv2.rectangle(frame, top_left, bottom_right, color=color)
                 # else:
                     # frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], 0] = cell_color_mask
                     # frame[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], 1] = cell_color_mask
