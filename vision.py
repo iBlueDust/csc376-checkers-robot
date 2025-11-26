@@ -1,9 +1,50 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import threading
+import queue
 
 from board import Board, BLACK, WHITE, EMPTY
 from draughts import Board as DraughtsBoard
+
+
+class VideoCapture:
+    q: queue.Queue[cv2.Mat]
+    
+    def __init__(self, name):
+        self.cap = cv2.VideoCapture(name)
+        self.q = queue.Queue()
+        self.running = True
+        t = threading.Thread(target=self._reader)
+        t.daemon = True
+        t.start()
+
+    # read frames as soon as they are available, keeping only most recent one
+    def _reader(self):
+        while self.running:
+            ret, frame = self.cap.read()
+            if not ret:
+                break
+            if not self.q.empty():
+                try:
+                    self.q.get_nowait()   # discard previous (unprocessed) frame
+                except queue.Empty:
+                    pass
+            self.q.put(frame)
+
+    def read(self):
+        try:
+            return self.q.get()
+        except queue.Empty:
+            return None
+    
+    def isOpened(self):
+        return self.cap.isOpened()
+    
+    def release(self):
+        self.running = False
+        self.cap.release()
+
 
 
 class Vision:
@@ -12,7 +53,7 @@ class Vision:
     
     def __init__(self, device_index: int = 0):
         cv2.namedWindow("preview")
-        self.vc = cv2.VideoCapture(device_index)
+        self.vc = VideoCapture(device_index)
  
         if self.vc.isOpened(): # try to get the first frame
             self.rval, self.frame = self.vc.read()
@@ -29,10 +70,10 @@ class Vision:
         cv2.destroyWindow("preview")
         
  
-    def get_frame(self) -> tuple[bool, cv2.Mat]:
-        rval, self.frame = self.vc.read()
+    def get_frame(self) -> cv2.Mat | None:
+        self.frame = self.vc.read()
         cv2.imshow("preview", self.frame)
-        return rval, self.frame
+        return self.frame
     
     
     def get_game_board(self) -> Board:
@@ -40,10 +81,10 @@ class Vision:
         BOARD_SIZE = BOARD[1] - BOARD[0]
         CELL_SIZE = BOARD_SIZE / 8
     
-        rval, self.frame = self.vc.read()
-        while not rval:
+        self.frame = self.vc.read()
+        while self.frame is None:
             input('Camera not ready. Press Enter to retry...')
-            rval, self.frame = self.vc.read()
+            self.frame = self.vc.read()
             
         frame = self.frame.copy()
     
