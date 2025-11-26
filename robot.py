@@ -5,6 +5,7 @@ from csc376_franky.motion_generator import RuckigMotionGenerator
 from spatialmath import SE3
 import csc376_bind_franky
 from draughts import Move
+import pymp
  
 class Robot:
     '''
@@ -31,31 +32,25 @@ class Robot:
     grip_open_q = 0.05
     grip_closed_q = 0.0305
 
-    def __init__(self):   
+    def __init__(self, visualizer=True, franka_url='192.168.1.107'):   
         # II. RTB, Ruckig, csc376_franky, and Visualizer setup
         self.sim_model = rtb.models.Panda()
         self.motion_generator = RuckigMotionGenerator()
     
-        self.real_robot = csc376_bind_franky.FrankaJointTrajectoryController(
-            "192.168.1.107")
+        self.real_robot = csc376_bind_franky.FrankaJointTrajectoryController(franka_url)
         self.real_robot.setupSignalHandler()
-        self.real_gripper = csc376_bind_franky.Gripper("192.168.1.107")
+        self.real_gripper = csc376_bind_franky.Gripper(franka_url)
     
         q_start = self.real_robot.get_current_joint_positions()
-        self.visualizer = RtbVisualizer(self.sim_model, q_start)
+        self.visualizer = RtbVisualizer(self.sim_model, q_start) if visualizer else None
  
     def move_ik(self, target: SE3):
         '''Move robot to target SE3 pose using inverse kinematics'''
         q_start = self.real_robot.get_current_joint_positions()
  
         # III. Calculate your goal
-        se3_start    = self.sim_model.fkine(q_start)
-        # se3_target = SE3.Ty(-0.10) * se3_start # Relative to start position, pre-multiply for world frame reference
-        # se3_target = self.sim_model.fkine(q_end)
+        se3_start = self.sim_model.fkine(q_start)
         se3_target = target
-        print("q_start", q_start)
-        print("se3_start", se3_start)
-        print("se3_target", se3_target)
  
         # IV. Visualize the trajectory in simulation
         cartesian_traj, dt = self.motion_generator \
@@ -72,20 +67,17 @@ class Robot:
             q_start, 
             cartesian_traj
         )
-        # input("Press enter, to run in visualizer\n")
-        # visualizer.move_gripper(0.07, 0.1)
-        # visualizer.run_joint_trajectory(q_traj, dt)
  
-        # V. Run on real robot
-        # yes_or_else = input("To run on the real robot, type [yes], then press enter\n")
-        # if yes_or_else != "yes":
-        #     print("User did not type [yes], will not run on real robot")
-        #     return visualizer
- 
-        try:
+        if self.visualizer is None: 
+            # move robot directly
             self.real_robot.run_joint_trajectory(q_traj, dt)
-        except Exception as e:
-            print(e)
+        else:
+            # move robot and visualizer simultaneously
+            with pymp.Parallel(2) as p:
+                if p.thread_num == 0:
+                    self.real_robot.run_joint_trajectory(q_traj, dt)
+                elif p.thread_num == 1:
+                    self.visualizer.run_joint_trajectory(q_traj, dt)
  
     def move_q(self, q_end: list[float], duration_sec=2.0, dt_sec=0.03):
         q_start = self.real_robot.get_current_joint_positions()
@@ -104,17 +96,32 @@ class Robot:
  
         q_traj.append(q_end)
  
-        self.real_robot.run_joint_trajectory(q_traj, dt_sec)
+        if self.visualizer is None: 
+            # move robot directly
+            self.real_robot.run_joint_trajectory(q_traj, dt_sec)
+        else:
+            # move robot and visualizer simultaneously
+            with pymp.Parallel(2) as p:
+                if p.thread_num == 0:
+                    self.real_robot.run_joint_trajectory(q_traj, dt_sec)
+                elif p.thread_num == 1:
+                    self.visualizer.run_joint_trajectory(q_traj, dt_sec)
         
     def get_pose(self) -> SE3:
         q_current = self.real_robot.get_current_joint_positions()
         return self.sim_model.fkine(q_current)
  
-    def grip(self, q: float):
-        # visualizer.move_gripper(q, 0.1)
-        print('Enter gripper')
-        self.real_gripper.move(q, 0.1)
-        print('Exit gripper')
+    def grip(self, q: float):       
+        if self.visualizer is None: 
+            # move robot directly
+            self.real_gripper.move(q, 0.1)
+        else:
+            # move robot and visualizer simultaneously
+            with pymp.Parallel(2) as p:
+                if p.thread_num == 0:
+                    self.real_gripper.move(q, 0.1)
+                elif p.thread_num == 1:
+                    self.visualizer.move_gripper(q, 0.1)
 
     def grip_open(self):
         self.grip(self.grip_open_q)
