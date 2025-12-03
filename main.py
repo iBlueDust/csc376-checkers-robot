@@ -8,6 +8,7 @@ import numpy as np
 import cv2
 import time
 import re
+import sys
 
 
 def extract_black_white(fen):
@@ -154,7 +155,7 @@ def run_human_vs_ai(robot: Robot, cam: Vision, human_color=WHITE):
         print("\n=== Game Over: AI wins! ===")
  
  
-def main():
+def main(camera_index: int):
     print("╔════════════════════════════════════╗")
     print("║     CSC376 Checkers Robot Game     ║")
     print("╠════════════════════════════════════╣")
@@ -169,14 +170,31 @@ def main():
         run_ai_vs_ai()
     elif choice == "2":
         print('Running 2. Human vs AI')
-        with Robot() as robot, Vision(4) as cam:
+        with Robot() as robot, Vision(camera_index) as cam:
             robot.move_home()
             run_human_vs_ai(robot, cam, human_color=WHITE)
             robot.move_home()
     else:
         print("Invalid choice. Defaulting to AI vs AI.")
-        run_ai_vs_ai()
+        run_ai_vs_ai(camera_index)
  
+ 
+def is_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
  
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 2 or not is_int(sys.argv[1]):
+        print("Usage: python main.py <camera_index>")
+        print("  <camera_index>: Index of the camera to use (default is 4 for Intel RealSense depth camera)")
+        print("                  Check `ls /dev/video*` to find available cameras on Linux.")
+        sys.exit(1)
+        
+    if len(sys.argv) == 1:
+        print("Defaulting to camera_index=4")
+        main(camera_index=4)
+    else:
+        main(int(sys.argv[1]))

@@ -4,8 +4,8 @@ from draughts import Board, Move, BLACK, WHITE
 
 import minmax
 
-def main():
-    with Robot(visualizer=False) as robot, Vision(4) as cam:
+def main(camera_index=4):
+    with Robot(visualizer=False) as robot, Vision(camera_index) as cam:
         robot.move_home()
 
         # Play loop
