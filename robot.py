@@ -19,12 +19,12 @@ class Robot:
         robot.grip_open()
     '''
     # I. Speed factor settings
-    relative_vel_factor = 0.035
-    relative_acc_factor = 0.035
+    relative_vel_factor = 0.05
+    relative_acc_factor = 0.05
     relative_jerk_factor = 0.12
     
     camera_origin = SE3.Trans(0.4275, -0.066, 0) # only pertains information of the xy-coordinate of the camera
-    board_origin = SE3.Trans(0.505, 0, 0) # 0.505 in the x-direction from the robot base
+    board_origin = SE3.Trans(0.505, 0.005, 0) # 0.505 in the x-direction from the robot base
     board_size = 0.32 # size of the board in the world frame
     low_floor = 0 + 0.022 + 0.060
     mid_floor = 0.03 + 0.022 + 0.060

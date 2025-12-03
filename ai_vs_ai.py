@@ -15,7 +15,7 @@ def main():
         
         def exec_ai_move(id: int, color) -> bool:
             print(f"AI{id} thinking...")
-            best = minmax.find_best_move(board, depth=3, color=color)
+            best = minmax.find_best_move(board, depth=5, color=color)
             if not best:
                 print("No legal move.")
                 return False

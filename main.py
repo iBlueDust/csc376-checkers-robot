@@ -17,6 +17,8 @@ def extract_black_white(fen):
             black_section = re.search(r":B(.+)", fen).group(1)
             white_nums = re.findall(r"[A-Za-z]*?(\d+)", white_section)
             black_nums = re.findall(r"[A-Za-z]*?(\d+)", black_section)
+            black_nums.sort()
+            white_nums.sort()
             white_str = ",".join(white_nums)
             black_str = ",".join(black_nums)
         elif "B:W" in fen: 
@@ -24,6 +26,8 @@ def extract_black_white(fen):
             black_section = re.search(r":B(.+)", fen).group(1)
             white_nums = re.findall(r"[A-Za-z]*?(\d+)", white_section)
             black_nums = re.findall(r"[A-Za-z]*?(\d+)", black_section)
+            white_nums.sort()
+            black_nums.sort()
             white_str = ",".join(white_nums)
             black_str = ",".join(black_nums)
         print("WHITE", white_str)
@@ -79,14 +83,14 @@ def run_human_vs_ai(robot: Robot, cam: Vision, human_color=WHITE):
                 # Get current board state from camera
                 robot.move_home()
 
-                t_start = time.time() * 1000.0
+                t_start = time.time()
                 current_vision = cam.get_game_board()
-                t_end = time.time() * 1000.0
+                t_end = time.time()
                 t_elapsed = t_end - t_start
-                print(f'Vision took {t_elapsed:.02f} ms', end='\r')
+                print(f'Vision took {t_elapsed * 1000.0:.02f} ms', end='\r')
  
                 # Check for key press
-                key = cv2.waitKey(round(max(5, 1000/60.0 - t_elapsed))) & 0xFF
+                key = cv2.waitKey(round(1000 * max(0.005, 1 / 60.0 - t_elapsed))) & 0xFF
  
                 if key == ord('q'):
                     print("Game quit by user.")
@@ -113,13 +117,11 @@ def run_human_vs_ai(robot: Robot, cam: Vision, human_color=WHITE):
         else:
             # AI's turn
             print(f"\nAI thinking...")
-            t_start = time.time() * 1000.0
+            t_start = time.time()
             best = minmax.find_best_move(board, depth=5, color=ai_color)
-            current_vision = cam.get_game_board()
-            t_end = time.time() * 1000.0
+            t_end = time.time()
             t_elapsed = t_end - t_start
-            
-            print(f'AI took {t_elapsed:.02f} ms')
+            print(f'AI compute took {t_elapsed * 1000:.02f} ms')
  
             if not best:
                 print("AI has no legal moves.")
